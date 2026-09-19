@@ -11,12 +11,15 @@ terraform {
     container_name       = "tfstate"
     key                  = "terraform.tfstate"
     use_oidc             = true
-    # Update this with the specific storage account name generated earlier
-    storage_account_name = "saf1trackertfstate23678" 
+    storage_account_name = "saf1trackertfstate23678" # Your tfstate storage account
   }
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
   use_oidc = true
 }
