@@ -1,7 +1,7 @@
 variable "location" {
   description = "The Azure region to deploy resources"
   type        = string
-  default     = "eastus"
+  default     = "eastus2"
 }
 
 variable "sql_admin_login" {

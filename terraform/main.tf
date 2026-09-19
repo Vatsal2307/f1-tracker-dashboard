@@ -14,7 +14,7 @@ resource "azurerm_resource_group" "rg" {
 resource "azurerm_static_web_app" "swa" {
   name                = "swa-f1-tracker-${random_integer.suffix.result}"
   resource_group_name = azurerm_resource_group.rg.name
-  location            = "eastus2" # Note: SWA has specific region availabilities; eastus2 is standard
+  location            = azurerm_resource_group.rg.location # Note: SWA has specific region availabilities; eastus2 is standard
   sku_tier            = "Free"
   sku_size            = "Free"
 }
