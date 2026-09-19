@@ -1,0 +1,35 @@
+# .gitignore
+
+# Local .terraform directories
+**/.terraform/*
+.terraform/
+
+# .tfstate files (CRITICAL: These can contain secrets)
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Ignore all .tfvars files (These contain sensitive data like SQL passwords)
+*.tfvars
+*.tfvars.json
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore transient lock info files
+.terraform.tfstate.lock.info
+
+# Node/Frontend modules
+node_modules/
+dist/
+build/
+.env
+
+# PowerShell / Azure Functions local files
+local.settings.json
