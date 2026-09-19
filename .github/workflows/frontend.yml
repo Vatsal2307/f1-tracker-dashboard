@@ -27,7 +27,7 @@ jobs:
               id: get-token
               run: |
                   # Dynamically fetch the token using Azure CLI
-                  TOKEN=$(az staticwebapp secrets list --name "swa-f1-tracker-XXXX" --resource-group "rg-f1-tracker-app" --query "properties.apiKey" -o tsv)
+                  TOKEN=$(az staticwebapp secrets list --name "swa-f1-tracker-2053" --resource-group "rg-f1-tracker-app" --query "properties.apiKey" -o tsv)
                   echo "SWA_TOKEN=$TOKEN" >> $GITHUB_ENV
 
             - name: Deploy to Static Web Apps
