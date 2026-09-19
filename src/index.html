@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Season Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Formula 1 Season Tracker</h1>
+    </header>
+
+    <main class="dashboard">
+        <section class="card">
+            <h2>WDC Standings</h2>
+            <table id="standings-table">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Driver</th>
+                        <th>Points</th>
+                        <th>Wins</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Race Schedule</h2>
+            <div id="next-race-banner" class="highlight-banner">
+                <!-- Next race info injected here -->
+            </div>
+            <table id="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Round</th>
+                        <th>Race</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
