@@ -4,6 +4,7 @@ on:
   push:
     branches: ["main"]
     paths: ["terraform/**"] # Only run if TF files change
+  workflow_dispatch: # Add this line
 
 permissions:
   id-token: write # Required for OIDC
