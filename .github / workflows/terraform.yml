@@ -13,6 +13,8 @@ env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  TF_VAR_sql_admin_login: ${{ secrets.TF_VAR_sql_admin_login }}
+  TF_VAR_sql_admin_password: ${{ secrets.TF_VAR_sql_admin_password }}
   ARM_USE_OIDC: true
 
 jobs:
