@@ -16,6 +16,9 @@ Write-Host "Fetching Driver Standings from Jolpica API..."
 $driverResponse = Invoke-RestMethod -Uri "http://api.jolpi.ca/ergast/f1/current/driverStandings.json"
 $season = $driverResponse.MRData.StandingsTable.season
 $standings = $driverResponse.MRData.StandingsTable.StandingsLists[0].DriverStandings
+Write-Host "Fetching Schedule from Jolpica API..."
+$scheduleResponse = Invoke-RestMethod -Uri "http://api.jolpi.ca/ergast/f1/current.json"
+$races = $scheduleResponse.MRData.RaceTable.Races
 
 # 3. Connect to SQL Database natively
 $connString = "Server=tcp:$sqlServer,1433;Initial Catalog=$sqlDatabase;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
@@ -44,6 +47,24 @@ try {
         $insertCmd.Parameters.AddWithValue("@Points", $driver.points) | Out-Null
         $insertCmd.Parameters.AddWithValue("@Wins", $driver.wins) | Out-Null
         $insertCmd.ExecuteNonQuery() | Out-Null
+    }
+    # Clear and Upsert Schedule
+    $clearScheduleCmd = $conn.CreateCommand()
+    $clearScheduleCmd.Transaction = $transaction
+    $clearScheduleCmd.CommandText = "DELETE FROM Races WHERE Season = @Season"
+    $clearScheduleCmd.Parameters.AddWithValue("@Season", $season) | Out-Null
+    $clearScheduleCmd.ExecuteNonQuery() | Out-Null
+
+    foreach ($race in $races) {
+        $insertRaceCmd = $conn.CreateCommand()
+        $insertRaceCmd.Transaction = $transaction
+        $insertRaceCmd.CommandText = "INSERT INTO Races (Season, Round, RaceName, CircuitName, RaceDate) VALUES (@Season, @Round, @RaceName, @CircuitName, @RaceDate)"
+        $insertRaceCmd.Parameters.AddWithValue("@Season", $season) | Out-Null
+        $insertRaceCmd.Parameters.AddWithValue("@Round", $race.round) | Out-Null
+        $insertRaceCmd.Parameters.AddWithValue("@RaceName", $race.raceName) | Out-Null
+        $insertRaceCmd.Parameters.AddWithValue("@CircuitName", $race.Circuit.circuitName) | Out-Null
+        $insertRaceCmd.Parameters.AddWithValue("@RaceDate", $race.date) | Out-Null
+        $insertRaceCmd.ExecuteNonQuery() | Out-Null
     }
     
     $transaction.Commit()
