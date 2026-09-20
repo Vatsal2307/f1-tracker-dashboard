@@ -85,7 +85,7 @@ If you want to deploy a clone of this architecture to your own Azure tenant:
 **1. Clone the repository:**
 
 ```bash
-git clone https://github.com/YourUsername/f1-tracker-dashboard.git
+git clone https://github.com/Vatsal2307/f1-tracker-dashboard.git
 cd f1-tracker-dashboard
 
 ```
