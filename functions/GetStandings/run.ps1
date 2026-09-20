@@ -25,9 +25,12 @@ try {
     }
     $conn.Close()
 
+    # Safely convert to JSON only if data exists, otherwise return an empty array string
+    $jsonBody = if ($standings.Count -gt 0) { $standings | ConvertTo-Json -Depth 10 } else { "[]" }
+
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
             StatusCode = [HttpStatusCode]::OK
-            Body       = (@($standings) | ConvertTo-Json -Depth 10)
+            Body       = $jsonBody
             Headers    = @{ "Content-Type" = "application/json" } 
         })
 }
