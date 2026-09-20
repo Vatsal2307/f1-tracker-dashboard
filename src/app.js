@@ -1,17 +1,18 @@
-const API_BASE_URL = 'https://func-f1-tracker-2053.azurewebsites.net/api';
+const JOLPICA_BASE = 'https://api.jolpi.ca/ergast/f1';
 
 async function loadStandings() {
     try {
-        const response = await fetch(`${API_BASE_URL}/GetStandings`);
+        const response = await fetch(`${JOLPICA_BASE}/current/driverStandings.json`);
         const data = await response.json();
+        const rawStandings = data.MRData.StandingsTable.StandingsLists[0].DriverStandings;
 
         const tbody = document.querySelector('#standings-table tbody');
-        data.forEach(driver => {
+        rawStandings.forEach(driver => {
             const row = `<tr>
-                <td>${driver.Position}</td>
-                <td><strong>${driver.DriverName}</strong></td>
-                <td>${driver.Points}</td>
-                <td>${driver.Wins}</td>
+                <td>${driver.position}</td>
+                <td><strong>${driver.Driver.givenName} ${driver.Driver.familyName}</strong></td>
+                <td>${driver.points}</td>
+                <td>${driver.wins}</td>
             </tr>`;
             tbody.innerHTML += row;
         });
@@ -22,16 +23,17 @@ async function loadStandings() {
 
 async function loadConstructorStandings() {
     try {
-        const response = await fetch(`${API_BASE_URL}/GetConstructorStandings`);
+        const response = await fetch(`${JOLPICA_BASE}/current/constructorStandings.json`);
         const data = await response.json();
+        const rawStandings = data.MRData.StandingsTable.StandingsLists[0].ConstructorStandings;
 
         const tbody = document.querySelector('#constructor-table tbody');
-        data.forEach(team => {
+        rawStandings.forEach(team => {
             const row = `<tr>
-                <td>${team.Position}</td>
-                <td><strong>${team.ConstructorName}</strong></td>
-                <td>${team.Points}</td>
-                <td>${team.Wins}</td>
+                <td>${team.position}</td>
+                <td><strong>${team.Constructor.name}</strong></td>
+                <td>${team.points}</td>
+                <td>${team.wins}</td>
             </tr>`;
             tbody.innerHTML += row;
         });
@@ -42,34 +44,36 @@ async function loadConstructorStandings() {
 
 async function loadSchedule() {
     try {
-        const response = await fetch(`${API_BASE_URL}/GetSchedule`);
+        const response = await fetch(`${JOLPICA_BASE}/current.json`);
         const data = await response.json();
+        const rawRaces = data.MRData.RaceTable.Races;
 
         const tbody = document.querySelector('#schedule-table tbody');
         let nextRaceFound = false;
+        const now = new Date();
 
-        data.forEach(race => {
+        rawRaces.forEach(race => {
+            const raceDate = new Date(race.date);
+            const status = raceDate < now ? 'Completed' : 'Scheduled';
+            const formattedDate = race.date; // already YYYY-MM-DD from Jolpica
+
             // Pin the next upcoming race to the banner
-            if (!nextRaceFound && race.Status === "Scheduled") {
+            if (!nextRaceFound && status === 'Scheduled') {
                 document.getElementById('next-race-banner').innerHTML =
-                    `<strong>NEXT RACE:</strong> ${race.RaceName} on ${race.RaceDate}`;
+                    `<strong>NEXT RACE:</strong> ${race.raceName} on ${formattedDate}`;
                 nextRaceFound = true;
             }
 
-            // Determine if we show a button or a badge
-            const isCompleted = race.Status === "Completed";
-            const actionCell = isCompleted
-                ? `<button class="view-results-btn" onclick="showRaceResults(${race.Round}, '${race.RaceName}')">View Results</button>`
+            const actionCell = status === 'Completed'
+                ? `<button class="view-results-btn" onclick="showRaceResults(${race.round}, '${race.raceName}')">View Results</button>`
                 : `<span class="badge scheduled">Scheduled</span>`;
 
-            // Build and insert the row
-            const row = `<tr>
-                <td>${race.Round}</td>
-                <td><strong>${race.RaceName}</strong><br><small>${race.CircuitName}</small></td>
-                <td>${race.RaceDate}</td>
+            tbody.innerHTML += `<tr>
+                <td>${race.round}</td>
+                <td><strong>${race.raceName}</strong><br><small>${race.Circuit.circuitName}</small></td>
+                <td>${formattedDate}</td>
                 <td>${actionCell}</td>
             </tr>`;
-            tbody.innerHTML += row;
         });
     } catch (error) {
         console.error('Error fetching schedule:', error);
@@ -86,22 +90,24 @@ async function showRaceResults(round, raceName) {
     dialog.showModal();
 
     try {
-        const res = await fetch(`${API_BASE_URL}/GetRaceResults?round=${round}`);
+        const res = await fetch(`${JOLPICA_BASE}/current/${round}/results.json`);
         const data = await res.json();
+        const races = data.MRData.RaceTable.Races;
 
         tbody.innerHTML = '';
-        if (!data || data.length === 0) {
+        if (!races || races.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4">No results recorded yet.</td></tr>';
             return;
         }
 
-        data.forEach(item => {
+        const top10 = races[0].Results.slice(0, 10);
+        top10.forEach(item => {
             tbody.innerHTML += `
                 <tr>
-                    <td>${item.Position}</td>
-                    <td><strong>${item.DriverName}</strong></td>
-                    <td>${item.ConstructorName}</td>
-                    <td>${item.Points}</td>
+                    <td>${item.position}</td>
+                    <td><strong>${item.Driver.givenName} ${item.Driver.familyName}</strong></td>
+                    <td>${item.Constructor.name}</td>
+                    <td>${item.points}</td>
                 </tr>`;
         });
     } catch (err) {

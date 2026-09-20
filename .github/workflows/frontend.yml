@@ -39,5 +39,5 @@ jobs:
                   repo_token: ${{ secrets.GITHUB_TOKEN }}
                   action: "upload"
                   app_location: "./src" # Where our HTML/JS lives
-                  api_location: "" # We are hosting APIs separately in Azure Functions
+                  api_location: "" # No API — the frontend calls Jolpica directly
                   output_location: "" # No build step (like React/npm) required for plain HTML

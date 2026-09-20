@@ -3,15 +3,3 @@ variable "location" {
   type        = string
   default     = "centralus"
 }
-
-variable "sql_admin_login" {
-  description = "Administrator login name for the SQL Server"
-  type        = string
-  sensitive   = true
-}
-
-variable "sql_admin_password" {
-  description = "Administrator password for the SQL Server"
-  type        = string
-  sensitive   = true
-}
