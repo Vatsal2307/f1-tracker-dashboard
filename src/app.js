@@ -1,52 +1,5 @@
-// Replace XXXX with your actual function app suffix
-const API_BASE_URL = 'https://func-f1-tracker-XXXX.azurewebsites.net/api';
-async function loadSchedule() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/GetSchedule`);
-        const data = await response.json();
+const API_BASE_URL = 'https://func-f1-tracker-2053.azurewebsites.net/api';
 
-        const tbody = document.querySelector('#schedule-table tbody');
-        let nextRaceFound = false;
-
-        data.forEach(race => {
-            const row = `<tr>
-                <td>${race.Round}</td>
-                <td><strong>${race.RaceName}</strong><br><small>${race.CircuitName}</small></td>
-                <td>${race.RaceDate}</td>
-                <td>${race.Status}</td>
-            </tr>`;
-            tbody.innerHTML += row;
-
-            // Pin the next upcoming race to the banner
-            if (!nextRaceFound && race.Status === "Scheduled") {
-                document.getElementById('next-race-banner').innerHTML =
-                    `<strong>NEXT RACE:</strong> ${race.RaceName} on ${race.RaceDate}`;
-                nextRaceFound = true;
-            }
-            data.forEach(race => {
-                const isCompleted = race.Status === "Completed";
-                const actionCell = isCompleted
-                    ? `<button class="view-results-btn" onclick="showRaceResults(${race.Round}, '${race.RaceName}')">View Results</button>`
-                    : `<span class="badge scheduled">Scheduled</span>`;
-
-                const row = `<tr>
-        <td>${race.Round}</td>
-        <td><strong>${race.RaceName}</strong><br><small>${race.CircuitName}</small></td>
-        <td>${race.RaceDate}</td>
-        <td>${actionCell}</td>
-    </tr>`;
-                tbody.innerHTML += row;
-            });
-        });
-    } catch (error) {
-        console.error('Error fetching schedule:', error);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadStandings();
-    loadSchedule(); // Add this line!
-});
 async function loadStandings() {
     try {
         const response = await fetch(`${API_BASE_URL}/GetStandings`);
@@ -67,12 +20,61 @@ async function loadStandings() {
     }
 }
 
-// Initialize dashboard
-document.addEventListener('DOMContentLoaded', () => {
-    loadStandings();
-    // loadSchedule() would be called here once the GetSchedule API is ready
-});
+async function loadConstructorStandings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/GetConstructorStandings`);
+        const data = await response.json();
 
+        const tbody = document.querySelector('#constructor-table tbody');
+        data.forEach(team => {
+            const row = `<tr>
+                <td>${team.Position}</td>
+                <td><strong>${team.ConstructorName}</strong></td>
+                <td>${team.Points}</td>
+                <td>${team.Wins}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    } catch (error) {
+        console.error('Error fetching constructor standings:', error);
+    }
+}
+
+async function loadSchedule() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/GetSchedule`);
+        const data = await response.json();
+
+        const tbody = document.querySelector('#schedule-table tbody');
+        let nextRaceFound = false;
+
+        data.forEach(race => {
+            // Pin the next upcoming race to the banner
+            if (!nextRaceFound && race.Status === "Scheduled") {
+                document.getElementById('next-race-banner').innerHTML =
+                    `<strong>NEXT RACE:</strong> ${race.RaceName} on ${race.RaceDate}`;
+                nextRaceFound = true;
+            }
+
+            // Determine if we show a button or a badge
+            const isCompleted = race.Status === "Completed";
+            const actionCell = isCompleted
+                ? `<button class="view-results-btn" onclick="showRaceResults(${race.Round}, '${race.RaceName}')">View Results</button>`
+                : `<span class="badge scheduled">Scheduled</span>`;
+
+            // Build and insert the row
+            const row = `<tr>
+                <td>${race.Round}</td>
+                <td><strong>${race.RaceName}</strong><br><small>${race.CircuitName}</small></td>
+                <td>${race.RaceDate}</td>
+                <td>${actionCell}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    } catch (error) {
+        console.error('Error fetching schedule:', error);
+    }
+}
 
 async function showRaceResults(round, raceName) {
     const dialog = document.getElementById('results-dialog');
@@ -106,3 +108,10 @@ async function showRaceResults(round, raceName) {
         tbody.innerHTML = '<tr><td colspan="4">Failed to load results.</td></tr>';
     }
 }
+
+// Initialize dashboard once all content is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    loadStandings();
+    loadConstructorStandings();
+    loadSchedule();
+});

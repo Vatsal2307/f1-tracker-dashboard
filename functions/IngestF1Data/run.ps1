@@ -16,6 +16,9 @@ Write-Host "Fetching Driver Standings from Jolpica API..."
 $driverResponse = Invoke-RestMethod -Uri "http://api.jolpi.ca/ergast/f1/current/driverStandings.json"
 $season = $driverResponse.MRData.StandingsTable.season
 $standings = $driverResponse.MRData.StandingsTable.StandingsLists[0].DriverStandings
+Write-Host "Fetching Constructor Standings from Jolpica API..."
+$constructorResponse = Invoke-RestMethod -Uri "http://api.jolpi.ca/ergast/f1/current/constructorStandings.json"
+$constructorStandings = $constructorResponse.MRData.StandingsTable.StandingsLists[0].ConstructorStandings
 Write-Host "Fetching Schedule from Jolpica API..."
 $scheduleResponse = Invoke-RestMethod -Uri "http://api.jolpi.ca/ergast/f1/current.json"
 $races = $scheduleResponse.MRData.RaceTable.Races
@@ -47,6 +50,24 @@ try {
         $insertCmd.Parameters.AddWithValue("@Points", $driver.points) | Out-Null
         $insertCmd.Parameters.AddWithValue("@Wins", $driver.wins) | Out-Null
         $insertCmd.ExecuteNonQuery() | Out-Null
+    }
+    # Clear and Upsert Constructor Standings
+    $clearWccCmd = $conn.CreateCommand()
+    $clearWccCmd.Transaction = $transaction
+    $clearWccCmd.CommandText = "DELETE FROM ConstructorStandings WHERE Season = @Season"
+    $clearWccCmd.Parameters.AddWithValue("@Season", $season) | Out-Null
+    $clearWccCmd.ExecuteNonQuery() | Out-Null
+
+    foreach ($constructor in $constructorStandings) {
+        $insertWccCmd = $conn.CreateCommand()
+        $insertWccCmd.Transaction = $transaction
+        $insertWccCmd.CommandText = "INSERT INTO ConstructorStandings (Season, Position, ConstructorName, Points, Wins) VALUES (@Season, @Position, @ConstructorName, @Points, @Wins)"
+        $insertWccCmd.Parameters.AddWithValue("@Season", $season) | Out-Null
+        $insertWccCmd.Parameters.AddWithValue("@Position", $constructor.position) | Out-Null
+        $insertWccCmd.Parameters.AddWithValue("@ConstructorName", $constructor.Constructor.name) | Out-Null
+        $insertWccCmd.Parameters.AddWithValue("@Points", $constructor.points) | Out-Null
+        $insertWccCmd.Parameters.AddWithValue("@Wins", $constructor.wins) | Out-Null
+        $insertWccCmd.ExecuteNonQuery() | Out-Null
     }
 
     # Clear and Upsert Schedule
