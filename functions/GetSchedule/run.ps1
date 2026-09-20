@@ -11,34 +11,28 @@ try {
     $conn.Open()
 
     $cmd = $conn.CreateCommand()
-    $cmd.CommandText = "SELECT Round, RaceName, CircuitName, RaceDate FROM Races ORDER BY Round ASC"
-    $reader = $cmd.ExecuteReader()
-
-    $schedule = @()
-    while ($reader.Read()) {
-        $raceDate = $reader["RaceDate"] -as [datetime]
-        $schedule += @{
-            Round       = $reader["Round"]
-            RaceName    = $reader["RaceName"]
-            CircuitName = $reader["CircuitName"]
-            RaceDate    = $raceDate.ToString("yyyy-MM-dd")
-            Status      = if ($raceDate -lt (Get-Date)) { "Completed" } else { "Scheduled" }
-        }
-    }
+    $cmd.CommandText = "
+    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ConstructorStandings' and xtype='U')
+    CREATE TABLE ConstructorStandings (
+        Season NVARCHAR(10),
+        Position INT,
+        ConstructorName NVARCHAR(100),
+        Points FLOAT,
+        Wins INT
+    )"
+    $cmd.ExecuteNonQuery()
     $conn.Close()
-
-    $jsonBody = if ($schedule.Count -gt 0) { $schedule | ConvertTo-Json -Depth 10 } else { "[]" }
 
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
             StatusCode = [HttpStatusCode]::OK
-            Body       = $jsonBody
-            Headers    = @{ "Content-Type" = "application/json" } 
+            Body       = "MIGRATION SUCCESS: ConstructorStandings table created!"
+            Headers    = @{ "Content-Type" = "text/plain" } 
         })
 }
 catch {
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
             StatusCode = [HttpStatusCode]::InternalServerError
-            Body       = "[]"
-            Headers    = @{ "Content-Type" = "application/json" } 
+            Body       = "ERROR: $_"
+            Headers    = @{ "Content-Type" = "text/plain" } 
         })
 }
