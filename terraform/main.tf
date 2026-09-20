@@ -19,8 +19,7 @@ resource "azurerm_static_web_app" "swa" {
   sku_size            = "Free"
 }
 
-
-# 4. Function App Infrastructure (Consumption Plan)
+# 3. Function App Infrastructure (Consumption Plan)
 resource "azurerm_storage_account" "func_sa" {
   name                     = "saf1func${random_integer.suffix.result}"
   resource_group_name      = azurerm_resource_group.rg.name
@@ -49,10 +48,14 @@ resource "azurerm_windows_function_app" "func" {
     application_stack {
       powershell_core_version = "7.4"
     }
-  }
 
-  # Enable System-Assigned Managed Identity for passwordless SQL access
-  identity {
-    type = "SystemAssigned"
+    # Dynamically whitelist the Static Web App and Azure Portal to prevent CORS blocks
+    cors {
+      allowed_origins     = [
+        "https://${azurerm_static_web_app.swa.default_host_name}",
+        "https://portal.azure.com"
+      ]
+      support_credentials = false
+    }
   }
 }
