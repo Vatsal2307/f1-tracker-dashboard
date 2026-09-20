@@ -11,45 +11,47 @@ if (-not $round) {
     return
 }
 
-$sqlServer = $env:SQL_SERVER_NAME 
-$sqlDatabase = "sqldb-f1-tracker"
-
-# 1. Fast, dependency-free Managed Identity Token
-$imdsUrl = "$($env:IDENTITY_ENDPOINT)?api-version=2019-08-01&resource=https%3A%2F%2Fdatabase.windows.net%2F"
-$tokenResponse = Invoke-RestMethod -Uri $imdsUrl -Headers @{ "X-IDENTITY-HEADER" = $env:IDENTITY_HEADER } -Method Get
-# 2. Connect to SQL
-$connString = "Server=tcp:$sqlServer,1433;Initial Catalog=$sqlDatabase;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-$conn = New-Object System.Data.SqlClient.SqlConnection($connString)
-$conn.AccessToken = $tokenResponse.access_token
-$conn.Open()
-
-# 3. Query the Top 10 Results for the requested round
-$cmd = $conn.CreateCommand()
-$cmd.CommandText = @"
-SELECT Position, DriverName, ConstructorName, Points 
-FROM RaceResults 
-WHERE Round = @Round 
-ORDER BY Position ASC
-"@
-$cmd.Parameters.AddWithValue("@Round", [int]$round) | Out-Null
-$reader = $cmd.ExecuteReader()
-
-$results = @()
-while ($reader.Read()) {
-    $results += @{
-        Position        = $reader["Position"]
-        DriverName      = $reader["DriverName"]
-        ConstructorName = $reader["ConstructorName"]
-        Points          = $reader["Points"]
-    }
-}
-$conn.Close()
-
-# 4. Return formatted JSON response
-Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
-        StatusCode = [HttpStatusCode]::OK
-        Body       = ($results | ConvertTo-Json -Depth 5)
-        Headers    = @{ 
-            "Content-Type" = "application/json" 
+try {
+    # Fetch results for the specific round dynamically
+    $apiUrl = "http://api.jolpi.ca/ergast/f1/current/$round/results.json"
+    $response = Invoke-RestMethod -Uri $apiUrl -Method Get
+    
+    $races = $response.MRData.RaceTable.Races
+    $results = @()
+    
+    # Only process if the API returns completed race data
+    if ($races.Count -gt 0) {
+        $top10 = $races[0].Results | Select-Object -First 10
+        
+        foreach ($item in $top10) {
+            $results += @{
+                Position        = [int]$item.position
+                DriverName      = "$($item.Driver.givenName) $($item.Driver.familyName)"
+                ConstructorName = $item.Constructor.name
+                Points          = [float]$item.points
+            }
         }
-    })
+    }
+
+    # Safely convert to JSON
+    $jsonBody = if ($results.Count -gt 0) { $results | ConvertTo-Json -Depth 5 } else { "[]" }
+
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+            StatusCode = [HttpStatusCode]::OK
+            Body       = $jsonBody
+            Headers    = @{ 
+                "Content-Type"  = "application/json" 
+                "Cache-Control" = "public, max-age=14400"
+            }
+        })
+}
+catch {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+            StatusCode = [HttpStatusCode]::InternalServerError
+            Body       = "[]"
+            Headers    = @{ 
+                "Content-Type"  = "application/json"
+                "Cache-Control" = "no-cache" 
+            }
+        })
+}
