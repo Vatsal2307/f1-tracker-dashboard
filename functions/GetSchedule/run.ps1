@@ -3,11 +3,14 @@ param($Request, $TriggerMetadata)
 
 try {
     $sqlServer = $env:SQL_SERVER_NAME 
-    if (-not $sqlServer) { throw "SQL_SERVER_NAME environment variable is missing in Azure Settings." }
-
+    if (-not $sqlServer) { throw "SQL_SERVER_NAME environment variable is missing." }
     $sqlDatabase = "sqldb-f1-tracker"
-    $imdsUrl = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2019-08-01&resource=https%3A%2F%2Fdatabase.windows.net%2F"
-    $tokenResponse = Invoke-RestMethod -Uri $imdsUrl -Headers @{Metadata = "true" } -Method Get
+    
+    # FIX: Use the dynamically injected Azure Identity Endpoint to bypass socket restrictions
+    if (-not $env:IDENTITY_ENDPOINT) { throw "Managed Identity environment variables not found." }
+    
+    $imdsUrl = "$($env:IDENTITY_ENDPOINT)?api-version=2019-08-01&resource=https%3A%2F%2Fdatabase.windows.net%2F"
+    $tokenResponse = Invoke-RestMethod -Uri $imdsUrl -Headers @{ "X-IDENTITY-HEADER" = $env:IDENTITY_HEADER } -Method Get
     
     $connString = "Server=tcp:$sqlServer,1433;Initial Catalog=$sqlDatabase;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
     $conn = New-Object System.Data.SqlClient.SqlConnection($connString)
@@ -38,7 +41,6 @@ try {
         })
 }
 catch {
-    # Catch the exact error and print it to the browser
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::InternalServerError
             Body       = "Backend Error: $_"
