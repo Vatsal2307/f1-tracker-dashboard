@@ -1,41 +1,40 @@
 using namespace System.Net
-
 param($Request, $TriggerMetadata)
 
-$sqlServer = $env:SQL_SERVER_NAME 
-$sqlDatabase = "sqldb-f1-tracker"
+try {
+    $imdsUrl = "$($env:IDENTITY_ENDPOINT)?api-version=2019-08-01&resource=https%3A%2F%2Fdatabase.windows.net%2F"
+    $tokenResponse = Invoke-RestMethod -Uri $imdsUrl -Headers @{ "X-IDENTITY-HEADER" = $env:IDENTITY_HEADER } -Method Get
+    
+    $connString = "Server=tcp:$($env:SQL_SERVER_NAME),1433;Initial Catalog=sqldb-f1-tracker;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    $conn = New-Object System.Data.SqlClient.SqlConnection($connString)
+    $conn.AccessToken = $tokenResponse.access_token
+    $conn.Open()
 
-# 1. Fast, dependency-free Managed Identity Token
-$imdsUrl = "$($env:IDENTITY_ENDPOINT)?api-version=2019-08-01&resource=https%3A%2F%2Fdatabase.windows.net%2F"
-$tokenResponse = Invoke-RestMethod -Uri $imdsUrl -Headers @{ "X-IDENTITY-HEADER" = $env:IDENTITY_HEADER } -Method Get
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandText = "SELECT Position, DriverName, Points, Wins FROM DriverStandings ORDER BY Position ASC"
+    $reader = $cmd.ExecuteReader()
 
-# 2. Connect to SQL
-$connString = "Server=tcp:$sqlServer,1433;Initial Catalog=$sqlDatabase;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-$conn = New-Object System.Data.SqlClient.SqlConnection($connString)
-$conn.AccessToken = $tokenResponse.access_token
-$conn.Open()
-
-# 3. Query the Standings
-$cmd = $conn.CreateCommand()
-$cmd.CommandText = "SELECT Position, DriverName, Points, Wins FROM DriverStandings ORDER BY Position ASC"
-$reader = $cmd.ExecuteReader()
-
-$standings = @()
-while ($reader.Read()) {
-    $standings += @{
-        Position   = $reader["Position"]
-        DriverName = $reader["DriverName"]
-        Points     = $reader["Points"]
-        Wins       = $reader["Wins"]
-    }
-}
-$conn.Close()
-
-# 4. Return formatted JSON response
-Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
-        StatusCode = [HttpStatusCode]::OK
-        Body       = ($standings | ConvertTo-Json -Depth 10)
-        Headers    = @{
-            "Content-Type" = "application/json"
+    $standings = @()
+    while ($reader.Read()) {
+        $standings += @{
+            Position   = $reader["Position"]
+            DriverName = $reader["DriverName"]
+            Points     = $reader["Points"]
+            Wins       = $reader["Wins"]
         }
-    })
+    }
+    $conn.Close()
+
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
+            StatusCode = [HttpStatusCode]::OK
+            Body       = (@($standings) | ConvertTo-Json -Depth 10)
+            Headers    = @{ "Content-Type" = "application/json" } 
+        })
+}
+catch {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
+            StatusCode = [HttpStatusCode]::InternalServerError
+            Body       = "[]"
+            Headers    = @{ "Content-Type" = "application/json" } 
+        })
+}
