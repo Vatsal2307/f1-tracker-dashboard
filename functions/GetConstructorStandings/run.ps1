@@ -2,28 +2,19 @@ using namespace System.Net
 param($Request, $TriggerMetadata)
 
 try {
-    $imdsUrl = "$($env:IDENTITY_ENDPOINT)?api-version=2019-08-01&resource=https%3A%2F%2Fdatabase.windows.net%2F"
-    $tokenResponse = Invoke-RestMethod -Uri $imdsUrl -Headers @{ "X-IDENTITY-HEADER" = $env:IDENTITY_HEADER } -Method Get
-    
-    $connString = "Server=tcp:$($env:SQL_SERVER_NAME),1433;Initial Catalog=sqldb-f1-tracker;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-    $conn = New-Object System.Data.SqlClient.SqlConnection($connString)
-    $conn.AccessToken = $tokenResponse.access_token
-    $conn.Open()
-
-    $cmd = $conn.CreateCommand()
-    $cmd.CommandText = "SELECT Position, ConstructorName, Points, Wins FROM ConstructorStandings ORDER BY Position ASC"
-    $reader = $cmd.ExecuteReader()
+    $apiUrl = "http://api.jolpi.ca/ergast/f1/current/constructorStandings.json"
+    $response = Invoke-RestMethod -Uri $apiUrl -Method Get
+    $rawStandings = $response.MRData.StandingsTable.StandingsLists[0].ConstructorStandings
 
     $standings = @()
-    while ($reader.Read()) {
+    foreach ($constructor in $rawStandings) {
         $standings += @{
-            Position        = $reader["Position"]
-            ConstructorName = $reader["ConstructorName"]
-            Points          = $reader["Points"]
-            Wins            = $reader["Wins"]
+            Position        = [int]$constructor.position
+            ConstructorName = $constructor.Constructor.name
+            Points          = [float]$constructor.points
+            Wins            = [int]$constructor.wins
         }
     }
-    $conn.Close()
 
     $jsonBody = if ($standings.Count -gt 0) { $standings | ConvertTo-Json -Depth 10 } else { "[]" }
 
@@ -40,9 +31,6 @@ catch {
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
             StatusCode = [HttpStatusCode]::InternalServerError
             Body       = "[]"
-            Headers    = @{ 
-                "Content-Type"  = "application/json"
-                "Cache-Control" = "no-cache" 
-            } 
+            Headers    = @{ "Content-Type" = "application/json"; "Cache-Control" = "no-cache" } 
         })
 }
