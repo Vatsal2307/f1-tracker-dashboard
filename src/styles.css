@@ -1,0 +1,197 @@
+/* Import a structural, tech-forward sans-serif font */
+@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&display=swap');
+
+:root {
+    --f1-red: #e10600;
+    --f1-dark: #15151e;
+    --f1-surface: #1f1f27;
+    --text-primary: #ffffff;
+    --text-secondary: #d0d0d2;
+    --border-color: #38383f;
+    --hover-bg: #2a2a35;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Titillium Web', sans-serif;
+    background-color: var(--f1-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* Header */
+header {
+    background-color: var(--f1-red);
+    padding: 20px;
+    text-align: center;
+    border-bottom: 4px solid #000;
+}
+
+header h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Layout Grid */
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+    .dashboard {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Cards */
+.card {
+    background-color: var(--f1-surface);
+    border-radius: 8px;
+    border-top: 4px solid var(--border-color);
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: border-color 0.3s ease;
+}
+
+.card:hover {
+    border-top-color: var(--f1-red);
+}
+
+.card h2 {
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+/* Next Race Banner */
+.highlight-banner {
+    background: linear-gradient(90deg, var(--f1-red) 0%, transparent 100%);
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+th {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    padding: 12px 8px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+/* Position highlights */
+tbody tr td:first-child {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+/* Buttons and Badges */
+button.view-results-btn {
+    background-color: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+button.view-results-btn:hover {
+    background-color: var(--text-primary);
+    color: var(--f1-dark);
+}
+
+.badge.scheduled {
+    background-color: var(--border-color);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Modal / Dialog */
+dialog {
+    background-color: var(--f1-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-top: 4px solid var(--f1-red);
+    border-radius: 8px;
+    padding: 24px;
+    width: 90%;
+    max-width: 600px;
+    margin: 50vh auto 0;
+    transform: translateY(-50%);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(3px);
+}
+
+dialog h3 {
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+dialog button {
+    margin-top: 20px;
+    width: 100%;
+    background-color: var(--f1-red);
+    color: var(--text-primary);
+    border: none;
+    padding: 12px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+dialog button:hover {
+    background-color: #c90500;
+}
