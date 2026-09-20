@@ -30,13 +30,19 @@ try {
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
             StatusCode = [HttpStatusCode]::OK
             Body       = $jsonBody
-            Headers    = @{ "Content-Type" = "application/json" } 
+            Headers    = @{ 
+                "Content-Type"  = "application/json"
+                "Cache-Control" = "public, max-age=14400" 
+            } 
         })
 }
 catch {
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{ 
             StatusCode = [HttpStatusCode]::InternalServerError
             Body       = "[]"
-            Headers    = @{ "Content-Type" = "application/json" } 
+            Headers    = @{ 
+                "Content-Type"  = "application/json"
+                "Cache-Control" = "no-cache" 
+            } 
         })
 }
