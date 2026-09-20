@@ -48,6 +48,7 @@ try {
         $insertCmd.Parameters.AddWithValue("@Wins", $driver.wins) | Out-Null
         $insertCmd.ExecuteNonQuery() | Out-Null
     }
+
     # Clear and Upsert Schedule
     $clearScheduleCmd = $conn.CreateCommand()
     $clearScheduleCmd.Transaction = $transaction
@@ -66,9 +67,46 @@ try {
         $insertRaceCmd.Parameters.AddWithValue("@RaceDate", $race.date) | Out-Null
         $insertRaceCmd.ExecuteNonQuery() | Out-Null
     }
+
+    # Clear and Upsert Race Results (Top 10)
+    Write-Host "Fetching race results for completed rounds..."
+    $completedRaces = $races | Where-Object { ([datetime]$_.date) -lt (Get-Date) }
+
+    $clearResultsCmd = $conn.CreateCommand()
+    $clearResultsCmd.Transaction = $transaction
+    $clearResultsCmd.CommandText = "DELETE FROM RaceResults WHERE Season = @Season"
+    $clearResultsCmd.Parameters.AddWithValue("@Season", $season) | Out-Null
+    $clearResultsCmd.ExecuteNonQuery() | Out-Null
+
+    foreach ($compRace in $completedRaces) {
+        $round = $compRace.round
+        $resUrl = "http://api.jolpi.ca/ergast/f1/$season/$round/results.json"
+        
+        try {
+            $roundData = Invoke-RestMethod -Uri $resUrl -Method Get
+            $resultsList = $roundData.MRData.RaceTable.Races[0].Results | Select-Object -First 10
+
+            foreach ($item in $resultsList) {
+                $insResCmd = $conn.CreateCommand()
+                $insResCmd.Transaction = $transaction
+                $insResCmd.CommandText = "INSERT INTO RaceResults (Season, Round, Position, DriverName, ConstructorName, Points) VALUES (@Season, @Round, @Position, @DriverName, @ConstructorName, @Points)"
+                
+                $insResCmd.Parameters.AddWithValue("@Season", $season) | Out-Null
+                $insResCmd.Parameters.AddWithValue("@Round", [int]$round) | Out-Null
+                $insResCmd.Parameters.AddWithValue("@Position", [int]$item.position) | Out-Null
+                $insResCmd.Parameters.AddWithValue("@DriverName", "$($item.Driver.givenName) $($item.Driver.familyName)") | Out-Null
+                $insResCmd.Parameters.AddWithValue("@ConstructorName", $item.Constructor.name) | Out-Null
+                $insResCmd.Parameters.AddWithValue("@Points", [float]$item.points) | Out-Null
+                $insResCmd.ExecuteNonQuery() | Out-Null
+            }
+        }
+        catch {
+            Write-Warning "Could not retrieve results for Round $round: $_"
+        }
+    }
     
     $transaction.Commit()
-    Write-Host "Successfully updated Driver Standings for Season $season."
+    Write-Host "Successfully updated Driver Standings, Schedule, and Race Results for Season $season."
 }
 catch {
     $transaction.Rollback()
